@@ -291,23 +291,31 @@ function orgautocomplete_civicrm_postProcess($formName, &$form) {
 function orgautocomplete_civicrm_permission_check($permission, &$granted) {
   // Civi::log()->debug('orgautocomplete_civicrm_permission_check', [
   //   '$permission' => $permission,
-  //   '$granted' => $granted,
+  //   '$granted' => (int)$granted,
+  //   'permission_type' => (int)in_array($permission, ['view all contacts','access AJAX API']),
+  //   'entity' => strtolower(CRM_Utils_Request::retrieve('entity', 'String')),
+  //   'entity_check' => (int)(strtolower(CRM_Utils_Request::retrieve('entity', 'String')) == 'contact'),
+  //   'action' => strtolower(CRM_Utils_Request::retrieve('action', 'String')), // this is unset csomewhere
+  //   'action_check' => (int)(strtolower(CRM_Utils_Request::retrieve('action', 'String')) == 'getlist'),
   //   '$_REQUEST' => $_REQUEST,
   // ]);
 
   //adjust permissions for entityRef field using custom perm
-  if ($permission == 'view all contacts') {
-    if (CRM_Utils_Request::retrieve('entity', 'String') == 'contact' &&
-      CRM_Utils_Request::retrieve('action', 'String') == 'getlist'
+  // if (in_array($permission, ['view all contacts','access AJAX API'])) {
+    if (strtolower(CRM_Utils_Request::retrieve('entity', 'String')) == 'contact'
+      // && strtolower(CRM_Utils_Request::retrieve('action', 'String')) == 'getlist'
     ) {
       $json = json_decode(CRM_Utils_Request::retrieve('json', 'String'));
-      //Civi::log()->debug('orgautocomplete_civicrm_permission_check', ['$json' => $json]);
+      // Civi::log()->debug('orgautocomplete_civicrm_permission_check', ['$json' => $json]);
 
-      if (!empty($json->params->orgautocomplete)) {
+      if (
+        !empty($json->params->contact_type) && $json->params->contact_type == 'Organization' &&
+        !empty($json->params->orgautocomplete)
+      ) {
         $granted = TRUE;
       }
     }
-  }
+  // }
 }
 
 
