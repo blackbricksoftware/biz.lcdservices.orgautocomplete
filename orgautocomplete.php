@@ -301,9 +301,11 @@ function orgautocomplete_civicrm_permission_check($permission, &$granted) {
   // ]);
 
   //adjust permissions for entityRef field using custom perm
-  // if (in_array($permission, ['view all contacts','access AJAX API'])) {
-    if (strtolower(CRM_Utils_Request::retrieve('entity', 'String')) == 'contact'
-      // && strtolower(CRM_Utils_Request::retrieve('action', 'String')) == 'getlist'
+  if ($permission == 'view all contacts') {
+    if ((CRM_Utils_Request::retrieve('entity', 'String') == 'Contact' ||
+        CRM_Utils_Request::retrieve('entity', 'String') == 'contact'
+      ) &&
+      CRM_Utils_Request::retrieve('action', 'String') == 'getlist'
     ) {
       $json = json_decode(CRM_Utils_Request::retrieve('json', 'String'));
       // Civi::log()->debug('orgautocomplete_civicrm_permission_check', ['$json' => $json]);
