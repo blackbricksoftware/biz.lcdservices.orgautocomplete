@@ -145,9 +145,8 @@ function orgautocomplete_civicrm_buildForm($formName, &$form) {
   //   //'form' => $form,
   // ]);
 
-  if (in_array($formName, ['CRM_Event_Form_Registration_Register', 'CRM_Profile_Form_Edit'])) {
+  // if (in_array($formName, ['CRM_Event_Form_Registration_Register', 'CRM_Profile_Form_Edit'])) {
     $ele = !empty($form->_elementIndex['current_employer']) ? $form->_elementIndex['current_employer'] : '';
-
     if (!empty($ele)) {
       $groupId = Civi::settings()->get('Orgautocomplete_restrict_group');
 
@@ -191,52 +190,53 @@ function orgautocomplete_civicrm_buildForm($formName, &$form) {
         }
       }
     }
-  }
+  // }
 
   //set org name value to the tpl
-  if (in_array($formName, ['CRM_Event_Form_Registration_Confirm', 'CRM_Event_Form_Registration_ThankYou'])) {
+  // if (in_array($formName, ['CRM_Event_Form_Registration_Confirm', 'CRM_Event_Form_Registration_ThankYou'])) {
     $params = $form->getVar('_params');
-    $params = $params[0];
+    if (!empty($params)) {
+      $params = $params[0];
+      //if org_select field exists and is an integer, do a lookup to get the org name
+      if (!empty($params['org_select']) &&
+        (ctype_digit($params['org_select']) || is_int($params['org_select'])) &&
+        empty($params['current_employer'])
+      ) {
+        $tplVars = $form->get_template_vars();
+        //Civi::log()->debug('BEFORE', ['tplVars[primaryParticipantProfile]' => $tplVars['primaryParticipantProfile']]);
 
-    //if org_select field exists and is an integer, do a lookup to get the org name
-    if (!empty($params['org_select']) &&
-      (ctype_digit($params['org_select']) || is_int($params['org_select'])) &&
-      empty($params['current_employer'])
-    ) {
-      $tplVars = $form->get_template_vars();
-      //Civi::log()->debug('BEFORE', ['tplVars[primaryParticipantProfile]' => $tplVars['primaryParticipantProfile']]);
+        try {
+          $orgName = civicrm_api3('contact', 'getvalue', [
+            'id' => $params['org_select'],
+            'return' => 'display_name',
+          ]);
+          // Civi::log()->debug('', ['$orgName' => $orgName]);
 
-      try {
-        $orgName = civicrm_api3('contact', 'getvalue', [
-          'id' => $params['org_select'],
-          'return' => 'display_name',
-        ]);
-        // Civi::log()->debug('', ['$orgName' => $orgName]);
+          if (!empty($orgName)) {
+            //get the label for the field so we can set as key
+            $fieldLabel = $form->_fields['current_employer']['title'];
+            // Civi::log()->debug('', ['$fieldLabel' => $fieldLabel]);
 
-        if (!empty($orgName)) {
-          //get the label for the field so we can set as key
-          $fieldLabel = $form->_fields['current_employer']['title'];
-          // Civi::log()->debug('', ['$fieldLabel' => $fieldLabel]);
-
-          //cycle through pre/post in tplVars and assign value
-          if (isset($tplVars['primaryParticipantProfile']['CustomPre'][$fieldLabel])) {
-            $tplVars['primaryParticipantProfile']['CustomPre'][$fieldLabel] = $orgName;
-            $form->assign('primaryParticipantProfile', $tplVars['primaryParticipantProfile']);
-          }
-          foreach ($tplVars['primaryParticipantProfile']['CustomPost'] as $profileId => $profile) {
-            if (isset($tplVars['primaryParticipantProfile']['CustomPost'][$profileId][$fieldLabel])) {
-              $tplVars['primaryParticipantProfile']['CustomPost'][$profileId][$fieldLabel] = $orgName;
+            //cycle through pre/post in tplVars and assign value
+            if (isset($tplVars['primaryParticipantProfile']['CustomPre'][$fieldLabel])) {
+              $tplVars['primaryParticipantProfile']['CustomPre'][$fieldLabel] = $orgName;
               $form->assign('primaryParticipantProfile', $tplVars['primaryParticipantProfile']);
             }
+            foreach ($tplVars['primaryParticipantProfile']['CustomPost'] as $profileId => $profile) {
+              if (isset($tplVars['primaryParticipantProfile']['CustomPost'][$profileId][$fieldLabel])) {
+                $tplVars['primaryParticipantProfile']['CustomPost'][$profileId][$fieldLabel] = $orgName;
+                $form->assign('primaryParticipantProfile', $tplVars['primaryParticipantProfile']);
+              }
+            }
+
           }
-
         }
-      }
-      catch (CRM_API3_Exception $e) {}
+        catch (CRM_API3_Exception $e) {}
 
-      //Civi::log()->debug('AFTER', ['tplVars[primaryParticipantProfile]' => $tplVars['primaryParticipantProfile']]);
+        //Civi::log()->debug('AFTER', ['tplVars[primaryParticipantProfile]' => $tplVars['primaryParticipantProfile']]);
+      }
     }
-  }
+  // }
 }
 
 function orgautocomplete_civicrm_postProcess($formName, &$form) {
